@@ -51,7 +51,7 @@ Returns the number of negative eigenvalues of `M`.
 """
 function num_neg_eig end
 
-include("hsl.jl")
+#include("hsl.jl")
 include("ldlfactorizations.jl")
 
 end # module

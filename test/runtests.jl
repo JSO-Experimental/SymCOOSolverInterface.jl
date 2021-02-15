@@ -9,6 +9,16 @@ function tests()
   test_solver(LDLFactorizationStruct)
 end
 
+function _test_factorization(A, S; tol = 1e-15)
+  (n, n) = size(A)
+  __P = zeros(n, n); for i=1:n __P[S.P[i],i] = 1. end
+  In  = spdiagm(0 => ones(n))
+  nrm = norm(__P * (S.L + In) * S.D * (S.L + In)' * __P' - A, Inf)
+  test = nrm ≤ tol
+
+ return test
+end
+
 function test_solver(LinearSolver)
   Random.seed!(0)
   nvar, ncon = 5, 3
@@ -75,3 +85,27 @@ function test_solver(LinearSolver)
 end
 
 tests()
+
+@testset "LDLFactorizations with regularization" begin
+  B = [0.   0.   0.   0.   0.   0.   0.   0.   4.   0.
+       0.   0.   0.   0.   0.   0.   0.   0.   5.   0.
+       2.   4.   5.   -2   4.   1.   2.   2.   2.   0.
+       0.   0.   0.   0.   1.   9.   9.   1.   7.   1.
+       0.   0.   0.   0.   0.   0.   0.   0.   1.   0.
+       1.   3.   2.   1.   4.   3.   1.   0.   0.   7.
+       -3.  8.   0.   0.   0.   0.   -2.  0.   0.   1.
+       0.   0.   0.   5.   7.   9.   0.   2.   7.   1.
+       3.   2.   0.   0.   0.   0.   1.   3.   3.   2.
+       0.   0.   0.   0.  -3   -4    0.   0.   0.   0. ]
+  A = B * B'
+  (rows, cols, vals) = findnz(tril(sparse(A)))
+  ϵ = sqrt(eps(eltype(A)))
+  M = LDLFactorizationStruct(10, rows, cols, vals)
+  factorize!(M)
+  @test !success(M)
+
+  Me = LDLFactorizationStruct(10, rows, cols, vals, tol = ϵ, r2 = ϵ)
+  factorize!(Me)
+  @test success(Me)
+  @test _test_factorization(A, Me.factor; tol = ϵ)
+end

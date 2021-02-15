@@ -3,24 +3,40 @@ using LDLFactorizations, LinearAlgebra, SparseArrays
 export LDLFactorizationStruct
 
 # LDLFactorizations
-mutable struct LDLFactorizationStruct <: SymCOOSolver
+mutable struct LDLFactorizationStruct{T <: AbstractFloat, Ti <: Int} <: SymCOOSolver
   ndim :: Int
-  rows :: Vector{Int}
-  cols :: Vector{Int}
-  vals :: Vector
+  rows :: Vector{Ti}
+  cols :: Vector{Ti}
+  vals :: Vector{T}
   factor
 end
 
-function LDLFactorizationStruct(ndim, rows, cols, vals)
-  LDLFactorizationStruct(ndim, rows, cols, vals, nothing)
+#Tangi: February, 15th
+#r1, r2, tol, n_d parameters for the dynamic regularization
+function LDLFactorizationStruct(ndim :: Int, 
+                                rows :: AbstractVector{Ti}, 
+                                cols :: AbstractVector{Ti}, 
+                                vals :: AbstractVector{T}; 
+                                r1   :: Real = zero(T), 
+                                r2   :: Real = zero(T), 
+                                tol  :: Real = zero(T), 
+                                n_d  :: Int  = 0) where {T, Ti}
+  A = sparse(cols, rows, vals, ndim, ndim)
+  S = ldl_analyze(Symmetric(A, :U))
+  S.r1  = r1  #-ϵ
+  S.r2  = r2  # ϵ
+  S.tol = tol #ϵ
+  S.n_d = n_d #0
+  LDLFactorizationStruct(ndim, rows, cols, vals, S)
 end
 
 function factorize!(M :: LDLFactorizationStruct)
   try
-    A = sparse(M.cols, M.rows, M.vals, M.ndim, M.ndim)
-    M.factor = ldl(A, upper=true)
+    A = Symmetric(sparse(M.cols, M.rows, M.vals, M.ndim, M.ndim), :U)
+    M.factor = ldl_factorize!(A, M.factor)
+    M.factor.__factorized = true
   catch ex
-    M.factor = nothing
+    M.factor.__factorized = false
   end
 end
 
@@ -29,13 +45,15 @@ function solve!(x, M :: LDLFactorizationStruct, b)
 end
 
 function success(M :: LDLFactorizationStruct)
-  M.factor != nothing
+  !isnothing(M.factor) && M.factor.__factorized
 end
 
-function isposdef(M :: LDLFactorizationStruct)
-  success(M) && count(M.factor.d .≤ 1e-14) == 0
+function isposdef(M :: LDLFactorizationStruct{T,Ti}) where {T, Ti}
+  ϵ = eps(T)
+  success(M) && count(M.factor.d .≤ -ϵ) == 0
 end
 
-function num_neg_eig(M :: LDLFactorizationStruct)
-  count(M.factor.d .≤ -1e-14)
+function num_neg_eig(M :: LDLFactorizationStruct{T,Ti}) where {T, Ti}
+  ϵ = eps(T)
+  count(M.factor.d .≤ -ϵ)
 end

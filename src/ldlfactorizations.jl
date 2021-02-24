@@ -8,10 +8,10 @@ mutable struct LDLFactorizationStruct{T <: AbstractFloat, Ti <: Int} <: SymCOOSo
   rows :: Vector{Ti}
   cols :: Vector{Ti}
   vals :: Vector{T}
-  factor
+  factorized :: Bool #factor.__factorized is for memory allocation
+  factor #specify the structure
 end
 
-#Tangi: February, 15th
 #r1, r2, tol, n_d parameters for the dynamic regularization
 function LDLFactorizationStruct(ndim :: Int, 
                                 rows :: AbstractVector{Ti}, 
@@ -27,16 +27,16 @@ function LDLFactorizationStruct(ndim :: Int,
   S.r2  = r2  # ϵ
   S.tol = tol #ϵ
   S.n_d = n_d #0
-  LDLFactorizationStruct(ndim, rows, cols, vals, S)
+  LDLFactorizationStruct(ndim, rows, cols, vals, false, S)
 end
 
 function factorize!(M :: LDLFactorizationStruct)
   try
     A = Symmetric(sparse(M.cols, M.rows, M.vals, M.ndim, M.ndim), :U)
     M.factor = ldl_factorize!(A, M.factor)
-    M.factor.__factorized = true
+    M.factorized = true
   catch ex
-    M.factor.__factorized = false
+    M.factorized = false
   end
 end
 
@@ -45,7 +45,7 @@ function solve!(x, M :: LDLFactorizationStruct, b)
 end
 
 function success(M :: LDLFactorizationStruct)
-  !isnothing(M.factor) && M.factor.__factorized
+  !isnothing(M.factor) && M.factorized
 end
 
 function isposdef(M :: LDLFactorizationStruct{T,Ti}) where {T, Ti}

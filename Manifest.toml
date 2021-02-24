@@ -52,11 +52,9 @@ version = "1.2.0"
 
 [[LDLFactorizations]]
 deps = ["AMD", "LinearAlgebra", "SparseArrays", "Test"]
-git-tree-sha1 = "a4d14c8be6d5b32b855904c2cfa412adbd82a280"
-repo-rev = "master"
-repo-url = "https://github.com/JuliaSmoothOptimizers/LDLFactorizations.jl"
+git-tree-sha1 = "5e41f142f6511bb685bb8f4f232f5d82d7fa408e"
 uuid = "40e66cde-538c-5869-a4ad-c39174c6795b"
-version = "0.7.0"
+version = "0.8.0"
 
 [[LibGit2]]
 deps = ["Printf"]

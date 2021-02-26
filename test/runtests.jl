@@ -5,6 +5,8 @@ using HSL, LinearAlgebra, Random, SparseArrays, Test
 function tests()
   if isdefined(HSL, :libhsl_ma57)
     test_solver(MA57Struct)
+  else
+    @info("libhsl_ma57 not defined.")
   end
   test_solver(LDLFactorizationStruct)
 end

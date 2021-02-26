@@ -2,18 +2,22 @@ using HSL
 
 export MA57Struct
 
-if isdefined(HSL, :libhsl_ma57)
-  mutable struct MA57Struct <: SymCOOSolver
-    factor :: Ma57
-  end
+const Ma57Type = if isdefined(HSL, :libhsl_ma57)
+                Union{Nothing, Ma57}
+            else
+              Nothing
+            end
 
-  function MA57Struct(N, rows, cols, vals)
-    MA57Struct(ma57_coord(N, rows, cols, vals))
+mutable struct MA57Struct <: SymCOOSolver
+  factor :: Ma57Type
+end
+
+function MA57Struct(N, rows, cols, vals)
+  if isdefined(HSL, :libhsl_ma57)
+    return  MA57Struct(ma57_coord(N, rows, cols, vals))
   end
-else
-  function MA57Struct(N, rows, cols, vals)
-    error("MA57 not installed. See HSL.jl's README")
-  end
+  error("MA57 not installed. See HSL.jl's README")
+  return MA57Struct(nothing)
 end
 
 function factorize!(M :: MA57Struct)
